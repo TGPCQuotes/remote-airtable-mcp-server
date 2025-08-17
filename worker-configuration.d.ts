@@ -7,12 +7,12 @@ declare namespace Cloudflare {
 		GITHUB_CLIENT_ID: string;
 		GITHUB_CLIENT_SECRET: string;
 		COOKIE_ENCRYPTION_KEY: string;
-		DATABASE_URL: string;
+		AIRTABLE_API_KEY: string;
 		PERPLEXITY_API_KEY: string;
 		ANTHROPIC_API_KEY: string;
 		SENTRY_DSN: string;
 		NODE_ENV: string;
-		MCP_OBJECT: DurableObjectNamespace<import("./src/index").MyMCP>;
+		MCP_OBJECT: DurableObjectNamespace<import("./src/index").AirtableMCP>;
 		AI: Ai;
 	}
 }

@@ -1,26 +1,31 @@
-# Cloudflare Remote PostgreSQL Database MCP Server + GitHub OAuth
+# Remote Airtable MCP Server
 
-This is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that enables you to **chat with your PostgreSQL database**, deployable as a remote MCP server with GitHub OAuth through Cloudflare. This is production ready MCP.
+A remote Model Context Protocol (MCP) server that provides secure access to Airtable databases through GitHub OAuth authentication. Built on Cloudflare Workers for global edge deployment.
 
 ## Key Features
 
-- **🗄️ Database Integration with Lifespan**: Direct PostgreSQL database connection for all MCP tool calls
-- **🛠️ Modular, Single Purpose Tools**: Following best practices around MCP tools and their descriptions
-- **🔐 Role-Based Access**: GitHub username-based permissions for database write operations
-- **📊 Schema Discovery**: Automatic table and column information retrieval
-- **🛡️ SQL Injection Protection**: Built-in validation and sanitization
+- **🗄️ Airtable Integration**: Direct connection to Airtable databases via REST API
+- **🛠️ Comprehensive Tools**: Read and write operations for bases, tables, and records
+- **🔐 Role-Based Access**: GitHub username-based permissions for write operations
+- **📊 Schema Discovery**: Automatic base and table structure retrieval
+- **🛡️ Input Validation**: Built-in validation with Zod schemas
 - **📈 Monitoring**: Optional Sentry integration for production monitoring
 - **☁️ Cloud Native**: Powered by [Cloudflare Workers](https://developers.cloudflare.com/workers/) for global scale
 
-## Modular Architecture
+## Features
 
-This MCP server uses a clean, modular architecture that makes it easy to extend and maintain:
+### Read Operations (All Authenticated Users)
+- **listBases** - List all accessible Airtable bases
+- **listTables** - List tables in a specific base
+- **describeTable** - Get detailed table schema with fields and views
+- **listRecords** - List records with filtering, sorting, and pagination
+- **getRecord** - Get a specific record by ID
+- **searchRecords** - Search records using Airtable formula filtering
 
-- **`src/tools/`** - Individual tool implementations in separate files
-- **`registerAllTools()`** - Centralized tool registration system 
-- **Extensible Design** - Add new tools by creating files in `tools/` and registering them
-
-This architecture allows you to easily add new database operations, external API integrations, or any other MCP tools while keeping the codebase organized and maintainable.
+### Write Operations (Privileged Users Only)
+- **createRecord** - Create new records
+- **updateRecords** - Update multiple records (batch operations)
+- **deleteRecords** - Delete multiple records (batch operations)
 
 ## Transport Protocols
 
@@ -31,128 +36,69 @@ This MCP server supports both modern and legacy transport protocols:
 
 For new implementations, use the `/mcp` endpoint as it provides better performance and reliability.
 
-## How It Works
+## Architecture
 
-The MCP server provides three main tools for database interaction:
-
-1. **`listTables`** - Get database schema and table information (all authenticated users)
-2. **`queryDatabase`** - Execute read-only SQL queries (all authenticated users)  
-3. **`executeDatabase`** - Execute write operations like INSERT/UPDATE/DELETE (privileged users only)
+- **Cloudflare Workers** - Serverless runtime for global deployment
+- **GitHub OAuth** - Secure authentication with role-based access control
+- **Durable Objects** - Stateful MCP agent persistence
+- **Airtable API** - Direct integration with Airtable's REST API
 
 **Authentication Flow**: Users authenticate via GitHub OAuth → Server validates permissions → Tools become available based on user's GitHub username.
 
 **Security Model**: 
-- All authenticated GitHub users can read data
+- All authenticated GitHub users can read Airtable data
 - Only specific GitHub usernames can write/modify data
-- SQL injection protection and query validation built-in
+- Input validation and error sanitization built-in
 
-## Simple Example First
+## Quick Start
 
-Want to see a basic MCP server before diving into the full database implementation? Check out `src/simple-math.ts` - a minimal MCP server with a single `calculate` tool that performs basic math operations (add, subtract, multiply, divide). This example demonstrates the core MCP components: server setup, tool definition with Zod schemas, and dual transport support (`/mcp` and `/sse` endpoints). You can run it locally with `wrangler dev --config wrangler-simple.jsonc` and test at `http://localhost:8789/mcp`.
+### 1. Prerequisites
 
-## Prerequisites
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) installed
+- GitHub OAuth App configured
+- Airtable Personal Access Token
 
-- Node.js installed on your machine
-- A Cloudflare account (free tier works)
-- A GitHub account for OAuth setup
-- A PostgreSQL database (local or hosted)
-
-## Getting Started
-
-### Step 1: Install Wrangler CLI
-
-Install Wrangler globally to manage your Cloudflare Workers:
+### 2. Clone and Setup
 
 ```bash
-npm install -g wrangler
+git clone <this-repo>
+cd remote-airtable-mcp
+npm install
 ```
 
-### Step 2: Authenticate with Cloudflare
+### 3. Environment Configuration
 
-Log in to your Cloudflare account:
+Create `.dev.vars` for local development:
 
 ```bash
-wrangler login
+GITHUB_CLIENT_ID=your_github_oauth_app_id
+GITHUB_CLIENT_SECRET=your_github_oauth_app_secret
+COOKIE_ENCRYPTION_KEY=your_32_char_encryption_key
+AIRTABLE_API_KEY=your_airtable_personal_access_token
 ```
 
-This will open a browser window where you can authenticate with your Cloudflare account.
+### 4. Development
 
-### Step 3: Clone and Setup
-
-Clone the repo directly & install dependencies: `npm install`.
-
-## Environment Variables Setup
-
-Before running the MCP server, you need to configure several environment variables for authentication and database access.
-
-### Create Environment Variables File
-
-1. **Create your `.dev.vars` file** from the example:
-   ```bash
-   cp .dev.vars.example .dev.vars
-   ```
-
-2. **Configure all required environment variables** in `.dev.vars`:
-   ```
-   # GitHub OAuth (for authentication)
-   GITHUB_CLIENT_ID=your_github_client_id
-   GITHUB_CLIENT_SECRET=your_github_client_secret
-   COOKIE_ENCRYPTION_KEY=your_random_encryption_key
-
-   # Database Connection
-   DATABASE_URL=postgresql://username:password@localhost:5432/database_name
-
-   # Optional: Sentry monitoring
-   SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
-   NODE_ENV=development
-   ```
-
-### Getting GitHub OAuth Credentials
-
-1. **Create a GitHub OAuth App** for local development:
-   - Go to [GitHub Developer Settings](https://github.com/settings/developers)
-   - Click "New OAuth App"
-   - **Application name**: `MCP Server (Local Development)`
-   - **Homepage URL**: `http://localhost:8792`
-   - **Authorization callback URL**: `http://localhost:8792/callback`
-   - Click "Register application"
-
-2. **Copy your credentials**:
-   - Copy the **Client ID** and paste it as `GITHUB_CLIENT_ID` in `.dev.vars`
-   - Click "Generate a new client secret", copy it, and paste as `GITHUB_CLIENT_SECRET` in `.dev.vars`
-
-### Generate Encryption Key
-
-Generate a secure random encryption key for cookie encryption:
 ```bash
-openssl rand -hex 32
+# Start local development server
+npm run dev
+
+# The server will be available at:
+# - MCP endpoint: http://localhost:8792/mcp
+# - SSE endpoint: http://localhost:8792/sse
+# - OAuth flow: http://localhost:8792/authorize
 ```
-Copy the output and paste it as `COOKIE_ENCRYPTION_KEY` in `.dev.vars`.
 
-## Database Setup
+### 5. Configure Privileged Users
 
-1. **Set up PostgreSQL** using a hosted service like:
-   - [Supabase](https://supabase.com/) (recommended for beginners)
-   - [Neon](https://neon.tech/)
-   - Or use local PostgreSQL/Supabase
+Edit `src/tools/airtable-tools.ts` to add GitHub usernames that should have write access:
 
-2. **Update the DATABASE_URL** in `.dev.vars` with your connection string:
-   ```
-   DATABASE_URL=postgresql://username:password@host:5432/database_name
-   ```
-
-#### Connection String Examples:
-- **Local**: `postgresql://myuser:mypass@localhost:5432/mydb`
-- **Supabase**: `postgresql://postgres:your-password@db.your-project.supabase.co:5432/postgres`
-
-### Database Schema Setup
-
-The MCP server works with any PostgreSQL database schema. It will automatically discover:
-- All tables in the `public` schema
-- Column names, types, and constraints
-- Primary keys and indexes
-
-**Testing the Connection**: Once you have your database set up, you can test it by asking the MCP server "What tables are available in the database?" and then querying those tables to explore your data.
+```typescript
+const ALLOWED_WRITE_USERNAMES = new Set<string>([
+  "your-github-username",
+  "another-privileged-user"
+]);
+```
 
 ## Local Development & Testing
 

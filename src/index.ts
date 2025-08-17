@@ -3,24 +3,22 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpAgent } from "agents/mcp";
 import { Props } from "./types";
 import { GitHubHandler } from "./auth/github-handler";
-import { closeDb } from "./database/connection";
-import { registerAllTools } from "./tools/register-tools";
+import { registerAirtableTools } from "./tools/airtable-tools";
 
-export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
+export class AirtableMCP extends McpAgent<Env, Record<string, never>, Props> {
 	server = new McpServer({
-		name: "PostgreSQL Database MCP Server",
+		name: "Airtable MCP Server",
 		version: "1.0.0",
 	});
 
 	/**
-	 * Cleanup database connections when Durable Object is shutting down
+	 * Cleanup resources when Durable Object is shutting down
 	 */
 	async cleanup(): Promise<void> {
 		try {
-			await closeDb();
-			console.log('Database connections closed successfully');
+			console.log('Airtable MCP server cleanup completed successfully');
 		} catch (error) {
-			console.error('Error during database cleanup:', error);
+			console.error('Error during cleanup:', error);
 		}
 	}
 
@@ -32,15 +30,15 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
 	}
 
 	async init() {
-		// Register all tools based on user permissions
-		registerAllTools(this.server, this.env, this.props);
+		// Register all Airtable tools based on user permissions
+		registerAirtableTools(this.server, this.env, this.props);
 	}
 }
 
 export default new OAuthProvider({
 	apiHandlers: {
-		'/sse': MyMCP.serveSSE('/sse') as any,
-		'/mcp': MyMCP.serve('/mcp') as any,
+		'/sse': AirtableMCP.serveSSE('/sse') as any,
+		'/mcp': AirtableMCP.serve('/mcp') as any,
 	},
 	authorizeEndpoint: "/authorize",
 	clientRegistrationEndpoint: "/register",

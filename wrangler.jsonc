@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "my-mcp-server",
+	"name": "airtable-mcp-server",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-03-10",
 	"compatibility_flags": [
@@ -13,7 +13,7 @@
 	"migrations": [
 		{
 			"new_sqlite_classes": [
-				"MyMCP"
+				"AirtableMCP"
 			],
 			"tag": "v1"
 		}
@@ -21,7 +21,7 @@
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "MyMCP",
+				"class_name": "AirtableMCP",
 				"name": "MCP_OBJECT"
 			}
 		]
